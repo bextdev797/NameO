@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIT App Inventor Project Name Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="file"], input[type="text"], button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #errorMessage {
+            color: red;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+          <h1>MIT App Inventor Project Name Editor</h1>
+        <input type="file" id="fileInput" accept=".aia">
+        <input type="text" id="newName" placeholder="Enter new project name">
+        <button id="editProjectName">Edit Project Name</button>
+        <p id="errorMessage"></p>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script>
+        document.getElementById('editProjectName').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const newName = document.getElementById('newName').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!fileInput.files.length) {
+                errorMessage.textContent = 'Please select an AIA file.';
+                return;
+            }
+
+            if (!newName) {
+                errorMessage.textContent = 'Please enter a new project name.';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const zip = new JSZip();
+
+            try {
+                const zipContent = await zip.loadAsync(file);
+                const projectProps = 'youngandroidproject/project.properties';
+                
+                if (!zipContent.files[projectProps]) {
+                    errorMessage.textContent = 'The project.properties file is missing.';
+                    return;
+                }
+
+                const propertiesContent = await zipContent.files[projectProps].async('string');
+                const updatedContent = propertiesContent.replace(/name="[^"]*"/, `name="${newName}"`)
+                                                        .replace(/aname="[^"]*"/, `aname="${newName}"`);
+                zipContent.file(projectProps, updatedContent);
+
+                const externalCompsFolder = `assets/external_comps/com.bextdev.NameO/`;
+                if (!zipContent.files[externalCompsFolder]) {
+                    errorMessage.textContent = `The folder ${externalCompsFolder} is missing.`;
+                    return;
+                }
+
+                const updatedZipContent = await zipContent.generateAsync({ type: 'blob' });
+                const renamedBlob = new File([updatedZipContent], `${newName}.aia`, { type: 'application/zip' });
+
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(renamedBlob);
+                link.download = `${newName}.aia`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                errorMessage.textContent = '';
+            } catch (error) {
+                errorMessage.textContent = `Error processing file: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
