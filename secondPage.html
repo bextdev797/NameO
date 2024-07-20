@@ -48,7 +48,7 @@
 </head>
 <body>
     <div class="container">
-          <h1>NameO</h1>
+        <h1>NameO</h1>
         <input type="file" id="fileInput" accept=".aia">
         <input type="text" id="newName" placeholder="Enter new project name">
         <button id="editProjectName">Edit Project Name</button>
@@ -88,9 +88,17 @@
                                                         .replace(/aname="[^"]*"/, `aname="${newName}"`);
                 zipContent.file(projectProps, updatedContent);
 
-                const externalCompsFolder = `assets/external_comps/com.bextdev.NameO/`;
-                if (!zipContent.files[externalCompsFolder]) {
-                    errorMessage.textContent = `The folder ${externalCompsFolder} is missing.`;
+                const externalCompsFolder = 'assets/external_comps/';
+                const externalComps = zipContent.folder(externalCompsFolder);
+                
+                if (!externalComps) {
+                    errorMessage.textContent = 'The assets/external_comps folder is missing.';
+                    return;
+                }
+
+                const targetFolder = 'com.bextdev.NameO/';
+                if (!externalComps.folder(targetFolder)) {
+                    errorMessage.textContent = `The folder ${targetFolder} is missing inside assets/external_comps.`;
                     return;
                 }
 
